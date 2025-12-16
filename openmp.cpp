@@ -61,6 +61,8 @@ for (int i = 0; i < M; i++){ //her satır için (M) çarpım yapılıp yeni bir 
 double end_serial = omp_get_wtime();
 double T_serial = end_serial - start_serial;
 std::cout << "Seri çarpım için carpim süresi: " << end_serial - start_serial << " saniyedir\n";
+std::cout << "\n";
+std::cout << "****************************";
 
 //PARALEL KISIM
 
@@ -89,12 +91,106 @@ for(int i = 0; i < M; i++){
     }
 }
 
+std::cout << "\n";
 if(same == true)
-    std::cout << "Paralel ve seri sonuç aynı.\n"; 
+    std::cout << "Paralel ve seri sonuç aynı.\n";
+
 
 double T_parallel = end_parallel - start_parallel;
 std::cout << "Paralel carpim suresi: " <<   T_parallel << " saniye\n";
 std::cout <<  "Basic paralelleştirme için speedup: " << T_serial / T_parallel << "\n";
-return (0);
+
+std::cout << "\n";
+std::cout << "****************************";
+
+//SCHEDULE İLE
+
+//schedule i değerleri threadlere nasıl paylaştırılacak sorusunun cevabı
+//schedule-static: işler en başta eşit parçalara bölünür. kim hangi işi yapacak başta belli. çalışırken değişmez
+//schedule-static avantajları: cache dostu, her satırın işi benzerse çok verimli olur
+//eksileri: eğer satırların işi farklıysa sürede dengesizlik olur
+//schedule static matris-vektör çarpımı için genelde en iyi
+
+for(int i = 0; i < M; i++)
+    y_parallel[i] = 0.0; //tekrardan sıfırladık
+
+double start_static = omp_get_wtime();
+
+#pragma omp parallel for schedule(static)
+for(int i = 0; i < M; i++){
+    double sum = 0.0;
+    for(int j = 0; j < N; j++){
+        sum+= A[i][j] * x[j];
+    }
+    y_parallel[i] = sum;
+}
+
+double end_static = omp_get_wtime();
+double T_static = end_static - start_static;
+
+std::cout << "\n";
+std::cout << "Schedule Static Paralel icin sure: " << T_static << "\n";
+std::cout << "Schedule Static icin SpeedUp: " << T_serial / T_static << "\n";
+std::cout << "\n";
+std::cout << "****************************";
+std::cout << "\n";
+
+
+//schedule-dinamik: işler chunk chunk verilir. bir thread işi bitince sıradaki iş alınır.
+//DAĞITIM ÇALIŞMA SIRASINDA
+//İş yükü dengesizce çok iyi
+//Ek maliyet var ve genelde staticten daha yavaş
+
+for (int i = 0; i < M; i++)
+    y_parallel[i] = 0.0;
+
+double start_dynamic = omp_get_wtime();
+
+#pragma omp parallel for schedule(dynamic, 4)
+for (int i = 0; i < M; i++) {
+    double sum = 0.0;
+    for (int j = 0; j < N; j++) {
+        sum += A[i][j] * x[j];
+    }
+    y_parallel[i] = sum;
+}
+
+double end_dynamic = omp_get_wtime();
+double T_dynamic = end_dynamic - start_dynamic;
+
+std::cout << "[dynamic,4] Paralel sure: " << T_dynamic << " saniye\n";
+std::cout << "[dynamic,4] Speedup     : " << T_serial / T_dynamic << "\n";
+std::cout << "\n";
+std::cout << "****************************\n";
+std::cout << "\n";
+
+
+
+//schedule-guided: dinamiğe benzer ama başta büyük parçalar verir sonra parça boyutunu küçültür
+//artilari: dinamikten daha az maliyetli, dengesiz iş yükleri için uygun
+//yine de statik kadar hızlı değil
+
+for (int i = 0; i < M; i++)
+    y_parallel[i] = 0.0;
+
+double start_guided = omp_get_wtime();
+
+#pragma omp parallel for schedule(guided)
+for (int i = 0; i < M; i++) {
+    double sum = 0.0;
+    for (int j = 0; j < N; j++) {
+        sum += A[i][j] * x[j];
+    }
+    y_parallel[i] = sum;
+}
+
+double end_guided = omp_get_wtime();
+double T_guided = end_guided - start_guided;
+
+std::cout << "[guided] Paralel sure: " << T_guided << " saniye\n";
+std::cout << "[guided] Speedup     : " << T_serial / T_guided << "\n";
+std::cout << "\n";
+std::cout << "****************************\n";
+std::cout << "\n";
 
 }
