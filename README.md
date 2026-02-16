@@ -2,7 +2,7 @@
 
 This project implements **matrix–vector multiplication** in C++ and analyzes the performance differences between **serial execution** and **parallel execution using OpenMP**.
 
-The main goal of the project is to observe how execution time and speedup change when different **OpenMP scheduling strategies** and **thread counts** are used.
+The main goal of the project is to observe how execution time and speedup change when different **OpenMP scheduling strategies** and **thread counts** are used. 
 
 ---
 
